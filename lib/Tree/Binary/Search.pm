@@ -13,7 +13,7 @@ use constant EQUAL_TO     =>  0;
 use constant LESS_THAN    => -1;
 use constant GREATER_THAN =>  1;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 ## ----------------------------------------------------------------------------
 ## Tree::Binary::Search
@@ -106,6 +106,14 @@ sub size {
 sub height {
     my ($self) = @_;
     return $self->{_root}->height();
+}
+
+sub DESTROY {
+    my ($self) = @_;
+    # be sure to call call the DESTROY method 
+    # on the underlying tree to ensure it is 
+    # cleaned up properly
+    ref($self->{_root}) && $self->{_root}->DESTROY();
 }
 
 ## ----------------------------------------------------------------------------
@@ -556,6 +564,10 @@ Return the length of the longest path from the root to the furthest leaf node.
 =item B<accept ($visitor)>
 
 This will pass the C<$visitor> object to the underlying Tree::Binary::Search::Node object's C<accept> method.
+
+=item B<DESTROY>
+
+This will clean up the underlying Tree::Binary object by calling DESTROY on its root node. This is necessary to properly clean up circular references. See the documentation for L<Tree::Binary>, specifically the "CIRCULAR REFERENCES" section for more details.
 
 =back
 

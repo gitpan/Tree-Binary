@@ -1,5 +1,18 @@
 Revision history for Perl extension Tree-Binary.
 
+0.04 Tues Aug 31 2004
+    - fixed memory leak in Tree::Binary, this is
+      related to a bug found in Tree::Simple. The
+      code is similar so I knew the issue would be
+      in here too. I also added a DESTROY method
+      to Tree::Binary::Search to force cleanup of
+      the underlying Tree::Binary object. 
+        - added a test to check that the leak is
+          fixed. It requires Test::Memory::Cycle 
+          to be run (14_Tree_Binary_leak_test.t)
+        - added documentation (copied from Tree::Simple)
+          relating to the use of the DESTROY method
+
 0.03 Wed Aug 25 2004
     - added test with Theorems idea in the file
       (50_Tree_Binary_Theorem_Proofs_test.t)

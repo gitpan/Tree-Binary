@@ -4,7 +4,7 @@ package Tree::Binary;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 ## ----------------------------------------------------------------------------
 ## Tree::Binary
@@ -365,6 +365,7 @@ sub DESTROY {
 	# garbage collector will work)
     $self->{_left}->DESTROY() if defined $self->{_left};
     $self->{_right}->DESTROY() if defined $self->{_right};
+    $self->{_parent} = undef;
 }
 
 1;
@@ -425,7 +426,10 @@ Tree::Binary - A Object Oriented Binary Tree for Perl
   $btree->accept($visitor);    
 
   # print the expression in breadth first order  
-  print $visitor->getAccumulation(); # prints "* + + 2 2 4 5"       
+  print $visitor->getAccumulation(); # prints "* + + 2 2 4 5"    
+  
+  # be sure to clean up all circular references
+  $btree->DESTROY();
 
 =head1 DESCRIPTION
 
@@ -465,7 +469,7 @@ This method sets C<$tree> to be the left subtree of the current Tree::Binary obj
 
 =item B<removeLeft>
 
-This method removed the left subtree of the current Tree::Binary object, making sure to remove all references to the current tree.
+This method removed the left subtree of the current Tree::Binary object, making sure to remove all references to the current tree. However, in order to properly clean up and circular references the removed child might have, it is advised to call it's C<DESTROY> method. See the L<CIRCULAR REFERENCES> section for more information.
 
 =item B<setRight ($tree)>
 
@@ -473,7 +477,7 @@ This method sets C<$tree> to be the right subtree of the current Tree::Binary ob
 
 =item B<removeRight>
 
-This method removed the right subtree of the current Tree::Binary object, making sure to remove all references to the current tree.
+This method removed the right subtree of the current Tree::Binary object, making sure to remove all references to the current tree. However, in order to properly clean up and circular references the removed child might have, it is advised to call it's C<DESTROY> method. See the L<CIRCULAR REFERENCES> section for more information.
 
 =back
 
@@ -594,13 +598,66 @@ This method is an alternate option to the plain C<clone> method. This method all
 
 =item B<DESTROY>
 
-To avoid memory leaks through uncleaned-up circular references, we implement the C<DESTROY> method. This method will attempt to call C<DESTROY> on each of its children (if it as any). This will result in a cascade of calls to C<DESTROY> on down the tree.
+To avoid memory leaks through uncleaned-up circular references, we implement the C<DESTROY> method. This method will attempt to call C<DESTROY> on each of its children (if it as any). This will result in a cascade of calls to C<DESTROY> on down the tree. It also cleans up it's parental relations as well.
+
+Because of perl's reference counting scheme and how that interacts with circular references, if you want an object to be properly reaped you should manually call C<DESTROY>. This is especially nessecary if your object has any children. See the section on L<CIRCULAR REFERENCES> for more information.
 
 =item B<fixDepth>
 
 For the most part, Tree::Binary will manage your tree's depth fields for you. But occasionally your tree's depth may get out of place. If you run this method, it will traverse your tree correcting the depth as it goes.
 
 =back
+
+=head1 CIRCULAR REFERENCES
+
+Perl uses reference counting to manage the destruction of objects, and this can cause problems with circularly referencing object like Tree::Binary. In order to properly manage your circular references, it is nessecary to manually call the C<DESTROY> method on a Tree::Binary instance. Here is some example code:
+
+  # create a root
+  my $root = Tree::Binary->new()
+  
+  { # create a lexical scope
+  
+      # create a subtree (with a child)
+      my $subtree = Tree::Binary->new("1")
+                          ->setRight(
+                              Tree::Binary->new("1.1")
+                          );
+                          
+      # add the subtree to the root                    
+      $root->setLeft($subtree);                    
+      
+      # ... do something with your trees 
+      
+      # remove the first child
+      $root->removeLeft();
+  }
+
+At this point you might expect perl to reap C<$subtree> since it has been removed from the C<$root> and is no longer available outside the lexical scope of the block. However, since C<$subtree> itself has a subtree, its reference count is still (at least) one and perl will not reap it. The solution to this is to call the C<DESTROY> method manually at the end of the lexical block, this will result in the breaking of all relations with the DESTROY-ed object and allow that object to be reaped by perl. Here is a corrected version of the above code.
+
+  # create a root
+  my $root = Tree::Binary->new()
+  
+  { # create a lexical scope
+  
+      # create a subtree (with a child)
+      my $subtree = Tree::Binary->new("1")
+                          ->setRight(
+                              Tree::Binary->new("1.1")
+                          );
+                          
+      # add the subtree to the root                    
+      $root->setLeft($subtree);                    
+      
+      # ... do something with your trees 
+      
+      # remove the first child and capture it
+      my $removed = $root->removeLeft();
+      
+      # now force destruction of the removed child
+      $removed->DESTROY();
+  }
+
+As you can see if the corrected version we used a new variable to capture the removed tree, and then explicitly called C<DESTROY> upon it. Only when a removed subtree has no children (it is a leaf node) can you safely ignore the call to C<DESTROY>. It is even nessecary to call C<DESTROY> on the root node if you want it to be reaped before perl exits, this is especially important in long running environments like mod_perl.
 
 =head1 OTHER TREE MODULES
 
@@ -646,7 +703,7 @@ I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Deve
  File                                           stmt branch   cond    sub    pod   time  total
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
  Tree/Binary.pm                                100.0  100.0   84.4  100.0  100.0   60.8   97.7
- Tree/Binary/Search.pm                          99.0   90.4   81.2  100.0  100.0   22.0   95.1
+ Tree/Binary/Search.pm                          99.0   90.5   81.2  100.0  100.0   22.0   95.1
  Tree/Binary/Search/Node.pm                    100.0  100.0   66.7  100.0  100.0   11.9   98.0
  Tree/Binary/VisitorFactory.pm                 100.0  100.0    n/a  100.0  100.0    0.5  100.0
  Tree/Binary/Visitor/Base.pm                   100.0  100.0   66.7  100.0  100.0    0.6   96.4
@@ -655,7 +712,7 @@ I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Deve
  Tree/Binary/Visitor/PostOrderTraversal.pm     100.0  100.0  100.0  100.0  100.0    0.4  100.0
  Tree/Binary/Visitor/PreOrderTraversal.pm      100.0  100.0  100.0  100.0  100.0    0.4  100.0
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
- Total                                          99.6   95.0   85.5  100.0  100.0  100.0   97.1
+ Total                                          99.6   95.1   85.5  100.0  100.0  100.0   97.1
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
 
 =head1 AUTHOR
