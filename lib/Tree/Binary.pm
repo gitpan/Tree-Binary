@@ -4,7 +4,7 @@ package Tree::Binary;
 use strict;
 use warnings;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 ## ----------------------------------------------------------------------------
 ## Tree::Binary
@@ -265,94 +265,102 @@ sub accept {
 ## cloning 
 
 sub clone {
-	my ($self) = @_;
-	# create a empty tree
-	my $cloned_tree = {
-		# do not clone the parent, this
-		# would cause serious recursion
-		_parent => $self->{_parent},
-		# depth is just a number so can 
-		# be copied by value
-		_depth => $self->{_depth},
-		# leave node undefined for now
-		_node => undef,
-		# and clone the left and right
-		};
-    $cloned_tree->{_left}  = $self->{_left}->clone() if $self->hasLeft();
-    $cloned_tree->{_right} = $self->{_right}->clone() if $self->hasRight();    
-	# we need to clone the node	
-	my $temp_node = $self->{_node};	
-	# if the node is not a reference, 
-	# a subroutine reference, a RegEx reference 
-	# or a filehandle reference, then just copy
-	# it to the new object. 
-	if (not ref($temp_node)       || 
-		ref($temp_node) eq "CODE" || 
-		ref($temp_node) eq "IO"   || 
-		ref($temp_node) eq "Regexp") {
-		$cloned_tree->{_node} = $temp_node;
-	}
-	# if the current slot is a scalar reference, then
-	# dereference it and copy it into the new object
-	elsif (ref($temp_node) eq "SCALAR") {
-		my $temp_scalar = ${$temp_node};
-		$cloned_tree->{_node} = \$temp_scalar;
-	}
-	
-		## NOTE:
-		# a Hash or an Array reference can potentially hold 
-		# other references within them, such as a multi-dimensional
-		# array or an array of hashes, or a hash of arrays, or any
-		# such combination. So if you need this structure to be 
-		# copied in depth, it is advised to override this method
-		# with a more appropriate one. Otherwise you will receive
-		# a shallow copy of these data-structures. Of course, there
-		# will be times when a shallow copy is most appropriate. 
-		# And at other times it may make more sense to not
-		# incur the overhead of the while loop and all the testing that
-		# is going on in here.
-		
-	# if the current slot is an array reference
-	# then dereference it and copy it
-	elsif (ref($temp_node) eq "ARRAY") {
-		$cloned_tree->{_node} = [ @{$temp_node} ];
-	}
-	# if the current reference is a hash reference
-	# then dereference it and copy it
-	elsif (ref($temp_node) eq "HASH") {
-		$cloned_tree->{_node} = { %{$temp_node} };
-	}
-	# if the current slot is another object
-	# see if the object has a clone method, 
-	#  and if so, use it to clone it.
-	elsif (UNIVERSAL::isa($temp_node, "UNIVERSAL") && $temp_node->can("clone")){
-		$cloned_tree->{_node} = $temp_node->clone();
-	}
-	else {
-		# all other instances where the current slot is
-		# a reference but not cloneable are assumed to be
-		# un-cloneable object of some sort
-		# and the author of the code intends it to not
-		# be cloneable as such.
-		$cloned_tree->{_node} = $temp_node;
-	}	
-	bless($cloned_tree, ref($self));
-	return $cloned_tree;
+    my ($self) = @_;
+    # first clone the value in the node
+    my $cloned_node = _cloneNode($self->getNodeValue());   
+    # create a new Tree::Simple object 
+    # here with the cloned node, however
+    # we do not assign the parent node
+    # since it really does not make a lot
+    # of sense. To properly clone it would
+    # be to clone back up the tree as well,
+    # which IMO is not intuitive. So in essence
+    # when you clone a tree, you detach it from
+    # any parentage it might have
+    my $clone = $self->new($cloned_node);
+    # however, because it is a recursive thing
+    # when you clone all the children, and then
+    # add them to the clone, you end up setting
+    # the parent of the children to be that of
+    # the clone (which is correct)
+    $clone->setLeft($self->{_left}->clone()) if $self->hasLeft();
+    $clone->setRight($self->{_right}->clone()) if $self->hasRight();                  
+    # return the clone            
+    return $clone;
 }
 
-# this allows cloning of single nodes while retaining connections to a tree
+    
+# this allows cloning of single nodes while 
+# retaining connections to a tree, this is sloppy
 sub cloneShallow {
 	my ($self) = @_;
 	my $cloned_tree = { %{$self} };
+	bless($cloned_tree, ref($self));    
 	# just clone the node (if you can)
-	$cloned_tree->{_node} = $self->{_node}->clone()
-		if (UNIVERSAL::isa($self->{_node}, "UNIVERSAL") && $self->{_node}->can("clone"));
-	# if it can not clone, then we can
-	# just rely on the copy of node that
-	# already there
-	bless($cloned_tree, ref($self));
+    my $cloned_node =_cloneNode($self->getNodeValue());
+    (defined($cloned_node)) || die "Node did not clone : " . $self->getNodeValue();    
+	$cloned_tree->setNodeValue($cloned_node);
 	return $cloned_tree;	
 }
+
+# this is a helper function which 
+# recursively clones the node
+sub _cloneNode {
+    my ($node, $seen) = @_;
+    # create a cache if we dont already
+    # have one to prevent circular refs
+    # from being copied more than once
+    $seen = {} unless defined $seen;
+    # now here we go...
+    my $clone;
+    # if it is not a reference, then lets just return it
+    return $node unless ref($node);
+    # if it is in the cache, then return that
+    return $seen->{$node} if exists ${$seen}{$node};
+    # if it is an object, then ...	
+    if (UNIVERSAL::isa($node, 'UNIVERSAL')) {
+        # see if we can clone it
+        if ($node->can('clone')) {
+            $clone = $node->clone();
+        }
+        # otherwise respect that it does 
+        # not want to be cloned
+        else {
+            $clone = $node;
+        }
+    }
+    else {
+        # if the current slot is a scalar reference, then
+        # dereference it and copy it into the new object
+        if (ref($node) eq "SCALAR" || ref($node) eq "REF") {
+            my $var = "";
+            $clone = \$var;
+            ${$clone} = _cloneNode(${$node}, $seen);
+        }
+        # if the current slot is an array reference
+        # then dereference it and copy it
+        elsif (ref($node) eq "ARRAY") {
+            $clone = [ map { _cloneNode($_, $seen) } @{$node} ];
+        }
+        # if the current reference is a hash reference
+        # then dereference it and copy it
+        elsif (ref($node) eq "HASH") {
+            $clone = {};
+            foreach my $key (keys %{$node}) {
+                $clone->{$key} = _cloneNode($node->{$key}, $seen);
+            }
+        }
+        else {
+            # all other ref types are not copied
+            $clone = $node;
+        }
+    }
+    # store the clone in the cache and 
+    $seen->{$node} = $clone;        
+    # then return the clone
+    return $clone;
+}
+
 
 ## ----------------------------------------------------------------------------
 ## Desctructor
@@ -698,21 +706,21 @@ None that I am aware of. Of course, if you find a bug, let me know, and I will b
 =head1 CODE COVERAGE
 
 I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Devel::Cover> report on this module test suite.
-
+ 
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
  File                                           stmt branch   cond    sub    pod   time  total
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
- Tree/Binary.pm                                100.0  100.0   84.4  100.0  100.0   60.8   97.7
- Tree/Binary/Search.pm                          99.0   90.5   81.2  100.0  100.0   22.0   95.1
- Tree/Binary/Search/Node.pm                    100.0  100.0   66.7  100.0  100.0   11.9   98.0
- Tree/Binary/VisitorFactory.pm                 100.0  100.0    n/a  100.0  100.0    0.5  100.0
- Tree/Binary/Visitor/Base.pm                   100.0  100.0   66.7  100.0  100.0    0.6   96.4
+ Tree/Binary.pm                                100.0   97.3   93.9  100.0  100.0   71.7   98.7
+ Tree/Binary/Search.pm                          99.0   90.5   81.2  100.0  100.0   13.9   95.1
+ Tree/Binary/Search/Node.pm                    100.0  100.0   66.7  100.0  100.0   11.7   98.2
+ Tree/Binary/VisitorFactory.pm                 100.0  100.0    n/a  100.0  100.0    0.5  100.0 
+ Tree/Binary/Visitor/Base.pm                   100.0  100.0   66.7  100.0  100.0    0.5   96.4
  Tree/Binary/Visitor/BreadthFirstTraversal.pm  100.0  100.0  100.0  100.0  100.0    0.0  100.0
- Tree/Binary/Visitor/InOrderTraversal.pm       100.0  100.0  100.0  100.0  100.0    3.4  100.0
- Tree/Binary/Visitor/PostOrderTraversal.pm     100.0  100.0  100.0  100.0  100.0    0.4  100.0
- Tree/Binary/Visitor/PreOrderTraversal.pm      100.0  100.0  100.0  100.0  100.0    0.4  100.0
- -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
- Total                                          99.6   95.1   85.5  100.0  100.0  100.0   97.1
+ Tree/Binary/Visitor/InOrderTraversal.pm       100.0  100.0  100.0  100.0  100.0    1.1  100.0
+ Tree/Binary/Visitor/PostOrderTraversal.pm     100.0  100.0  100.0  100.0  100.0    0.3  100.0
+ Tree/Binary/Visitor/PreOrderTraversal.pm      100.0  100.0  100.0  100.0  100.0    0.3  100.0
+ -------------------------------------------- ------ ------ ------ ------ ------ ------ ------ 
+ Total                                          99.6   94.4   88.8  100.0  100.0  100.0   97.4
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
 
 =head1 AUTHOR

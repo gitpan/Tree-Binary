@@ -6,7 +6,7 @@ use warnings;
 
 use Tree::Binary;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 our @ISA = qw(Tree::Binary);
 
@@ -69,12 +69,26 @@ sub makeRoot {
 
 sub clone {
     my ($self) = @_;
-    my $clone = $self->SUPER::clone();
-    # we just do a copy here, even though
-    # a key can theoretically be an object
-    # if you want to actually clone it, you
-    # will have to do it yourself
-    $clone->{_node_key} = $self->{_node_key};  
+    # first clone the value in the node
+    my $cloned_node = Tree::Binary::_cloneNode($self->getNodeValue());   
+    # create a new Tree::Simple object 
+    # here with the cloned node, however
+    # we do not assign the parent node
+    # since it really does not make a lot
+    # of sense. To properly clone it would
+    # be to clone back up the tree as well,
+    # which IMO is not intuitive. So in essence
+    # when you clone a tree, you detach it from
+    # any parentage it might have
+    my $clone = $self->new($self->{_node_key} => $cloned_node);
+    # however, because it is a recursive thing
+    # when you clone all the children, and then
+    # add them to the clone, you end up setting
+    # the parent of the children to be that of
+    # the clone (which is correct)
+    $clone->setLeft($self->{_left}->clone()) if $self->hasLeft();
+    $clone->setRight($self->{_right}->clone()) if $self->hasRight();                  
+    # return the clone            
     return $clone;
 }
 

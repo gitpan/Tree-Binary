@@ -1,5 +1,14 @@
 Revision history for Perl extension Tree-Binary.
 
+0.05 Tues Oct 12 2004
+    - fixed issue with the clone method where it
+      did not properly fix the parentel relations
+        - added tests and docs for this
+    - improved clone and cloneShallow with the addition
+      of the _cloneNode utility function, we now deep
+      clone the nodes
+        - added test and docs for this
+
 0.04 Tues Aug 31 2004
     - fixed memory leak in Tree::Binary, this is
       related to a bug found in Tree::Simple. The
