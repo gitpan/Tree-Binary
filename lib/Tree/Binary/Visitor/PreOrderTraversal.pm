@@ -6,7 +6,7 @@ use warnings;
 
 use Tree::Binary::Visitor::Base;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 our @ISA = qw(Tree::Binary::Visitor::Base);
 

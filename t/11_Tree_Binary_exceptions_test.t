@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More 'no_plan';
+use Test::More tests => 22;
 use Test::Exception;
 
 BEGIN { 
@@ -50,6 +50,12 @@ throws_ok {
     $btree->setLeft($BAD_OBJECT);
 } qr/Insufficient Arguments/, '... this should die';
 
+## test removeLeft
+
+throws_ok {
+    $btree->removeLeft();
+} qr/Illegal Operation/, '... this should die';
+
 ## test setRight
 
 throws_ok {
@@ -67,6 +73,12 @@ throws_ok {
 throws_ok {
     $btree->setRight($BAD_OBJECT);
 } qr/Insufficient Arguments/, '... this should die';
+
+## test removeRight
+
+throws_ok {
+    $btree->removeRight();
+} qr/Illegal Operation/, '... this should die';
 
 ## test traverse
 

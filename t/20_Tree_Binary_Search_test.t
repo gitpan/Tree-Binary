@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More 'no_plan';
+use Test::More tests => 35;
 use Test::Exception;
 
 BEGIN { 
@@ -26,6 +26,8 @@ can_ok($btree, 'min');
 can_ok($btree, 'useNumericComparison');
 $btree->useNumericComparison();
 
+ok(!$btree->exists(0), '... no keys yet exist');
+
 $btree->insert(9 => 'A');
 $btree->insert(7 => 'B');
 $btree->insert(14 => 'C');
@@ -43,8 +45,9 @@ throws_ok {
     $btree->insert(9 => 'X');
 } qr/Illegal Operation/, '... this should die';
 
-ok($btree->exists('11'), '... this key exists');
-ok(!$btree->exists('30'), '... this key does not exists');
+ok($btree->exists(11), '... this key exists');
+ok(!$btree->exists(30), '... this key does not exists');
+ok(!$btree->exists(0), '... this key does not exists');
 
 is($btree->select(7),  'B', '... found what we were looking for');
 is($btree->select(14), 'C', '... found what we were looking for');

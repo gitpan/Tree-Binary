@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More 'no_plan';
+use Test::More tests => 56;
 
 BEGIN { 
     use_ok('Tree::Binary');
@@ -163,3 +163,4 @@ is($btree->getNodeValue(), '*', '... got what we expected');
     ok($btree->getRight()->hasRight(), '... we have our right leaf node again');  
     is($btree->getRight()->getRight(), $right_leaf, '... and it is what we told it to be');
 }
+

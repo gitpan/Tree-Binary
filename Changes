@@ -1,5 +1,21 @@
 Revision history for Perl extension Tree-Binary.
 
+0.02 Tues Aug 24 2004
+    - beefed up the test suite a lot
+    
+Tree::Binary -
+    - Added the 'mirror' method
+        - added tests and documentation for it
+    - added exceptions to 'removeLeft' and 'removeRight'  
+      so you cannot remove something that is not there    
+        - added tests for that          
+
+Tree::Binary::Search -        
+    - fixed up some edge cases on the 'delete' method
+        - added tests for these
+    - added 'isEmpty' method to test if there is a 
+      tree there yet     
+
 0.01 Thursday Aug 12 2004 1:16 AM EST
     - module released (today is my 31st birthday too!)
 

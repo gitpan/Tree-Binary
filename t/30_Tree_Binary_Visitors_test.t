@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More 'no_plan';
+use Test::More tests => 43;
 
 BEGIN { 
     use_ok('Tree::Binary');
@@ -56,6 +56,22 @@ can_ok($btree, 'accept');
 }
 
 {
+    
+    my $visitor = Tree::Binary::Visitor::PreOrderTraversal->new();
+    isa_ok($visitor, 'Tree::Binary::Visitor::PreOrderTraversal');
+
+    can_ok($visitor, 'setNodeFilter');
+    $visitor->setNodeFilter(sub { "-" . $_[0]->getNodeValue() . "-" });
+
+    $btree->accept($visitor);
+            
+    is_deeply(
+            scalar $visitor->getResults(),
+            [ qw(-/- -+- -2- -2- -*- -4- -5-) ],
+            '... our PreOrder Traversal works');
+}
+
+{
     can_ok("Tree::Binary::Visitor::PostOrderTraversal", 'new');
     my $visitor = Tree::Binary::Visitor::PostOrderTraversal->new();
     isa_ok($visitor, 'Tree::Binary::Visitor::PostOrderTraversal');
@@ -68,6 +84,20 @@ can_ok($btree, 'accept');
     is_deeply(
             [ $visitor->getResults() ],
             [ qw(2 2 + 4 5 * /) ],
+            '... our PostOrder Traversal works');
+}
+
+{
+    my $visitor = Tree::Binary::Visitor::PostOrderTraversal->new();
+    isa_ok($visitor, 'Tree::Binary::Visitor::PostOrderTraversal');
+
+    can_ok($visitor, 'setNodeFilter');
+    $visitor->setNodeFilter(sub { "-" . $_[0]->getNodeValue() . "-" });
+
+    $btree->accept($visitor);    
+    is_deeply(
+            scalar $visitor->getResults(),
+            [ qw(-2- -2- -+- -4- -5- -*- -/-) ],
             '... our PostOrder Traversal works');
 }
 
@@ -88,6 +118,20 @@ can_ok($btree, 'accept');
 }
 
 {
+    my $visitor = Tree::Binary::Visitor::InOrderTraversal->new();
+    isa_ok($visitor, 'Tree::Binary::Visitor::InOrderTraversal');
+
+    can_ok($visitor, 'setNodeFilter');
+    $visitor->setNodeFilter(sub { "-" . $_[0]->getNodeValue() . "-" });
+
+    $btree->accept($visitor);
+    is_deeply(
+            scalar $visitor->getResults(),
+            [ qw(-2- -+- -2- -/- -4- -*- -5-) ],
+            '... our InOrder Traversal works');  
+}
+
+{
     can_ok("Tree::Binary::Visitor::BreadthFirstTraversal", 'new');
     my $visitor = Tree::Binary::Visitor::BreadthFirstTraversal->new();
     isa_ok($visitor, 'Tree::Binary::Visitor::BreadthFirstTraversal');
@@ -103,3 +147,16 @@ can_ok($btree, 'accept');
             '... our PreOrder Traversal works');   
 }
             
+{
+    my $visitor = Tree::Binary::Visitor::BreadthFirstTraversal->new();
+    isa_ok($visitor, 'Tree::Binary::Visitor::BreadthFirstTraversal');
+
+    can_ok($visitor, 'setNodeFilter');
+    $visitor->setNodeFilter(sub { "-" . $_[0]->getNodeValue() . "-" });
+
+    $btree->accept($visitor);
+    is_deeply(
+            scalar $visitor->getResults(),
+            [ qw(-/- -+- -*- -2- -2- -4- -5-) ],
+            '... our PreOrder Traversal works');   
+}                          

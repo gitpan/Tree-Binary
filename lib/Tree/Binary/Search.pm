@@ -9,11 +9,11 @@ use Tree::Binary::Search::Node;
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-use constant EQUAL_TO     => 0;
+use constant EQUAL_TO     =>  0;
 use constant LESS_THAN    => -1;
-use constant GREATER_THAN => 1;
+use constant GREATER_THAN =>  1;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 ## ----------------------------------------------------------------------------
 ## Tree::Binary::Search
@@ -40,6 +40,7 @@ sub new {
 sub _init {
 	my ($self, $root) = @_;
     $self->{_root} = $root || "Tree::Binary::Search::Node";
+    $self->{_comparison_func} = undef;
 }
 
 sub _compare {
@@ -68,7 +69,8 @@ sub useNumericComparison {
 
 sub setComparisonFunction {
     my ($self, $func) = @_;
-    (ref($func) eq "CODE") || die "Incorrect Object Type : comparison function is not a function"; 
+    (ref($func) eq "CODE") 
+        || die "Incorrect Object Type : comparison function is not a function"; 
     $self->{_comparison_func} = $func;   
 }
 
@@ -78,6 +80,14 @@ sub setComparisonFunction {
 sub getTree {
     my ($self) = @_;
     return $self->{_root};
+}
+
+## ----------------------------------------------------------------------------
+## informational 
+
+sub isEmpty {
+    my ($self) = @_;
+    return (ref($self->{_root})) ? FALSE : TRUE;
 }
 
 ## ----------------------------------------------------------------------------
@@ -98,7 +108,9 @@ sub insert {
     }
     # if the root is not a reference, then 
     # we dont yet have a root, so ...
-    unless (ref($self->{_root})) {
+    if ($self->isEmpty()) {
+        (defined($self->{_comparison_func})) 
+            || die "Illegal Operation : No comparison function set";    
         $self->{_root} = $btree;
     }
     else {
@@ -145,7 +157,7 @@ sub insert {
 
 sub update {
     my ($self, $key, $value) = @_;
-    (ref($self->{_root})) 
+    (!$self->isEmpty()) 
         || die "Illegal Operation : Cannot update without first inserting";
     (defined $key && defined $value)
         || die "Insufficient Arguments : Must supply a key to find and a value to update";
@@ -178,7 +190,7 @@ sub update {
 
 sub select : method {
     my ($self, $key) = @_;
-    (ref($self->{_root})) 
+    (!$self->isEmpty()) 
         || die "Illegal Operation : Cannot lookup anything without first inserting";
     (defined $key)
         || die "Insufficient Arguments : Must supply a key to find";
@@ -219,7 +231,7 @@ sub exists : method {
     my ($self, $key) = @_;
     (defined $key)
         || die "Insufficient Arguments : Must supply a key to find";    
-    return FALSE unless ref($self->{_root});
+    return FALSE if $self->isEmpty();
 
     my $current = $self->{_root};
     while (1) {
@@ -254,7 +266,7 @@ sub exists : method {
 
 sub max {
     my ($self) = @_;
-    (ref($self->{_root})) 
+    (!$self->isEmpty()) 
         || die "Illegal Operation : Cannot get a min value without first inserting";    
     my $current = $self->{_root};
     $current = $current->getRight() while $current->hasRight();
@@ -263,7 +275,7 @@ sub max {
 
 sub min {
     my ($self) = @_;
-    (ref($self->{_root})) 
+    (!$self->isEmpty()) 
         || die "Illegal Operation : Cannot get a max value without first inserting";    
     my $current = $self->{_root};
     $current = $current->getLeft() while $current->hasLeft();
@@ -277,7 +289,7 @@ sub min {
 
 sub delete : method {
     my ($self, $key) = @_;
-    (ref($self->{_root})) 
+    (!$self->isEmpty()) 
         || die "Illegal Operation : Cannot delete without first inserting";    
     (defined($key)) 
         || die "Insufficient Arguments : you must supply a valid key to lookup in the tree";
@@ -337,19 +349,38 @@ sub delete : method {
                         # we need to find the inorder successor
                         my $inorder_successor;
                         my $current_right = $right;
-                        while (1) {
-                            # we can safely do this since we know
-                            # that right has a left (see above if)
-                            $inorder_successor = $current_right->getLeft();
+                        while (1) {                                                  
+                            # on the first pass, we can safely do 
+                            # this since we know that right has a 
+                            # left (see above 'if' statement)
+                            $inorder_successor = $current_right->getLeft();  
+                            # however, if we dont have a left on
+                            # subsequent rounds, then we need to ...
+                            unless ($inorder_successor) {
+                                # ... back up a bit, and get the parent
+                                # of the current right node and get
+                                # the inorder successor of that node
+                                $current_right = $current_right->getParent();
+                                $inorder_successor = $current_right->getLeft(); 
+                                last;
+                            }
                             # we leave this loop if we are leftmost
-                            last if ($inorder_successor->hasRight());
+                            last if $inorder_successor->hasRight();                          
                             # otherwise, we keep moving down
                             $current_right = $inorder_successor;
                         }
+#                         print STDERR ">>> right: " . $right->getNodeValue() . "\n";                            
+#                         print STDERR ">>> current right: " . $current_right->getNodeValue() . "\n";                        
+#                         print STDERR ">>> inorder successor: " . $inorder_successor->getNodeValue() . "\n";                                                
                         # now that are here, we can adjust the tree
-                        $current_right->setLeft($inorder_successor->getRight());
-                        $inorder_successor->setLeft($current->removeLeft());                        
-                        $inorder_successor->setRight($current->removeRight());                       
+                        if ($inorder_successor->hasRight()) {
+                            $current_right->setLeft($inorder_successor->getRight());
+                        }
+                        else {
+                            $inorder_successor->getParent()->removeLeft();
+                        }
+                        $inorder_successor->setLeft($current->removeLeft()) if $current->hasLeft();                        
+                        $inorder_successor->setRight($current->removeRight()) if $current->hasRight();                        
                         $self->_replaceInParent($current, $inorder_successor);
                         return TRUE;
                     }
@@ -420,15 +451,15 @@ Tree::Binary::Search - A Binary Search Tree for perl
   
   # this creates the following tree:
   #
-  #     ___ 5___
-  #    /        \
-  #   2          9
-  #  / \        /
-  # 1   3      8
-  #      \    /
-  #       4  6
-  #           \
-  #            7     
+  #     +-------(5)----------+ 
+  #     |                    | 
+  #  +-(2)-+              +-(9)
+  #  |     |              |    
+  # (1)   (3)-+     +----(8)   
+  #           |     |          
+  #          (4)   (6)-+       
+  #                    |       
+  #                   (7)    
   #
   
   $btree->exists(7); # return true
@@ -445,13 +476,13 @@ Tree::Binary::Search - A Binary Search Tree for perl
   
   # this results in the following tree:
   #
-  #     ___ 6___
-  #    /        \
-  #   2          9
-  #  / \        /
-  # 1   3      8
-  #      \    /
-  #       4  7     
+  #     +-------(6)-------+ 
+  #     |                 | 
+  #  +-(2)-+           +-(9)
+  #  |     |           |    
+  # (1)   (3)-+     +-(8)   
+  #           |     |       
+  #          (4)   (7)  
   #
 
 =head1 DESCRIPTION
@@ -482,6 +513,16 @@ This will return the underlying binary tree object. Tt is a Tree::Binary::Search
 
 =back
 
+=head2 Informational 
+
+=over 4
+
+=item B<isEmpty>
+
+Returns true (C<1>) if the tree is empty, and false (C<0>) otherwise.
+
+=back
+
 =head2 Comparison Functions
 
 =over 4
@@ -504,21 +545,21 @@ A comparison function needs to be set for a Tree::Binary::Search object to work.
 
 =over 4
 
-=item B<select ($key)>
+=item B<insert ($key, $value)>
 
-Finds and returns the C<$key> specified. If the key is not found, and exception will be thrown. An exception will also be thrown if C<$key> is undefined, or if no keys have yet been inserted.
+Inserts the C<$value> at the location for C<$key> in the tree. An exception will be thrown if either C<$key> or C<$value> is undefined. Upon insertion of the first element, we check to be sure a comparison function has been assigned. If one has not been assigned, an exception will be thrown.
+
+=item B<update ($key, $value)>
+
+Updates the C<$value> at the location for C<$key> in the tree. If the key is not found, and exception will be thrown. An exception will also be thrown if either C<$key> or C<$value> is undefined, or if no keys have been inserted yet.
 
 =item B<exists ($key)>
 
 Returns true (C<1>) if the C<$key> specified is found, returns false (C<0>) othewise. An exception will be thrown if C<$key> is undefined, and it will return false (C<0>) if no keys have been inserted yet.
 
-=item B<insert ($key, $value)>
+=item B<select ($key)>
 
-Inserts the C<$value> at the location for C<$key> in the tree. An exception will be thrown if either C<$key> or C<$value> is undefined.
-
-=item B<update ($key, $value)>
-
-Updates the C<$value> at the location for C<$key> in the tree. If the key is not found, and exception will be thrown. An exception will also be thrown if either C<$key> or C<$value> is undefined, or if no keys have been inserted yet.
+Finds and returns the C<$key> specified. If the key is not found, and exception will be thrown. An exception will also be thrown if C<$key> is undefined, or if no keys have yet been inserted.
 
 =item B<delete ($key)>
 
@@ -533,16 +574,6 @@ Returns the maximum value stored in the tree (basically the right most node).
 =item B<min>
 
 Returns the minimum value stored in the tree (basically the left most node).
-
-=back
-
-=head1 TO DO
-
-=over 4
-
-=item Work on the tests and documentation
-
-Specifically I would like to test the delete method better.
 
 =back
 
@@ -578,17 +609,37 @@ This is actually the only module I found on CPAN which seems to implement a Bina
 
 =back
 
+=head1 SEE ALSO
+
+This module is part of a larger group, which are listed below.
+
+=over 4
+
+=item L<Tree::Binary>
+
+=item L<Tree::Binary::VisitorFactory>
+
+=item L<Tree::Binary::Visitor::BreadthFirstTraversal>
+
+=item L<Tree::Binary::Visitor::PreOrderTraversal>
+
+=item L<Tree::Binary::Visitor::PostOrderTraversal>
+
+=item L<Tree::Binary::Visitor::InOrderTraversal>
+
+=back
+
 =head1 BUGS
 
 None that I am aware of. Of course, if you find a bug, let me know, and I will be sure to fix it. 
 
 =head1 CODE COVERAGE
 
-See the CODE COVERAGE section of Tree::Binary for details.
+See the CODE COVERAGE section of L<Tree::Binary> for details.
 
 =head1 SEE ALSO
 
-The algorithm for C<delete> was taken from the GNU libavl 2.0.1
+The algorithm for C<delete> was taken from the GNU libavl 2.0.1, with modifications made to accomidate the OO-style of this module.
 
 L<http://www.msu.edu/~pfaffben/avl/libavl.html/Deleting-from-a-BST.html>
 

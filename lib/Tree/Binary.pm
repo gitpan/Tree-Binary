@@ -4,7 +4,7 @@ package Tree::Binary;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 ## ----------------------------------------------------------------------------
 ## Tree::Binary
@@ -61,7 +61,7 @@ sub setUID {
 sub setLeft {
     my ($self, $tree) = @_;
     (defined($tree) && ref($tree) && UNIVERSAL::isa($tree, "Tree::Binary"))
-        || die "Insufficient Arguments : left argument must be a Tree::Simple::Binary object";   
+        || die "Insufficient Arguments : left argument must be a Tree::Binary object";   
 	$tree->{_parent} = $self;
     $self->{_left} = $tree;
     unless ($tree->isLeaf()) {
@@ -75,6 +75,7 @@ sub setLeft {
 
 sub removeLeft {
     my ($self) = @_;
+    ($self->hasLeft()) || die "Illegal Operation: cannot remove node that doesnt exist";    
     my $left = $self->{_left};
     $left->{_parent} = undef;   
     unless ($left->isLeaf()) {
@@ -90,7 +91,7 @@ sub removeLeft {
 sub setRight {
     my ($self, $tree) = @_;
     (defined($tree) && ref($tree) && UNIVERSAL::isa($tree, "Tree::Binary"))
-        || die "Insufficient Arguments : right argument must be a Tree::Simple::Binary object";        
+        || die "Insufficient Arguments : right argument must be a Tree::Binary object";        
 	$tree->{_parent} = $self;
     $self->{_right} = $tree;    
     unless ($tree->isLeaf()) {
@@ -104,6 +105,7 @@ sub setRight {
 
 sub removeRight {
     my ($self) = @_;
+    ($self->hasRight()) || die "Illegal Operation: cannot remove node that doesnt exist";
     my $right = $self->{_right};
     $right->{_parent} = undef;
     unless ($right->isLeaf()) {
@@ -219,6 +221,16 @@ sub traverse {
     $self->{_right}->traverse($func) if defined $self->{_right};
 }
 
+sub mirror {
+    my ($self) = @_;
+    # swap left for right
+    my $temp = $self->{_left};
+    $self->{_left} = $self->{_right};
+    $self->{_right} = $temp;
+    # and recurse
+    $self->{_left}->mirror() if $self->hasLeft();
+    $self->{_right}->mirror() if $self->hasRight();
+}
 
 sub accept {
 	my ($self, $visitor) = @_;
@@ -365,6 +377,12 @@ Tree::Binary - A Object Oriented Binary Tree for Perl
                                           ->setLeft(Tree::Binary->new("4"))
                                           ->setRight(Tree::Binary->new("5"))
                           );  
+  # Or shown visually:
+  #     +---(*)---+
+  #     |         |
+  #  +-(+)-+   +-(+)-+
+  #  |     |   |     |
+  # (2)   (2) (4)   (5)
   
   # get a InOrder visitor
   my $visitor = Tree::Binary::Visitor::InOrderTraversal->new();
@@ -508,6 +526,30 @@ This method takes a single argument of a subroutine reference C<$func>. If the a
         my ($_tree) = @_;
         print (("\t" x $_tree->getDepth()), $_tree->getNodeValue(), "\n");
         });
+        
+=item B<mirror>
+
+This method will swap the left node for the right node and then do this recursively on down the tree. The result is the tree is a mirror image of what it was. So that given this tree:
+
+     +---(-)---+
+     |         |
+  +-(*)-+   +-(+)-+
+  |     |   |     |
+ (1)   (2) (4)   (5)     
+
+Calling C<mirror> will result in your tree now looking like this:
+
+     +---(-)---+
+     |         |
+  +-(+)-+   +-(*)-+
+  |     |   |     |
+ (5)   (4) (2)   (1) 
+
+It should be noted that this is a destructive action, it will alter your current tree. Although it is easily reversable by simply calling C<mirror> again. However, if you are looking for a mirror copy of the tree, I advise calling C<clone> first.
+
+  my $mirror_copy = $tree->clone()->mirror();
+
+Of course, the cloning operation is a full deep copy, so keep in mind the expense of this operation. Depending upon your needs it may make more sense to call C<mirror> a few times and gather your results with a Visitor object, rather than to C<clone>.
 
 =item B<accept ($visitor)>
 
@@ -531,14 +573,6 @@ For the most part, Tree::Binary will manage your tree's depth fields for you. Bu
 
 =back
 
-=head1 TO DO
-
-=over 4
-
-=item Work on the tests and documentation
-
-=back
-
 =head1 OTHER TREE MODULES
 
 As crazy as it might seem, there are no pure (non-search) binary tree implementations on CPAN (at least not that I could find). I found several balanaced trees of one kind or another (see the C<OTHER TREE MODULES> section of the Tree::Binary::Search documentation for that list). The closet thing I could find was the Tree module described below.
@@ -548,6 +582,26 @@ As crazy as it might seem, there are no pure (non-search) binary tree implementa
 =item B<Tree>
 
 I cannot tell for sure, but this module may include a non-search binary tree in it. Its documentation is beyond non-existant, and I gave up after reading about 3/4 of the source code. It was uploaded in October 1999 and as far as I can tell it has ever been updated (the file modification dates are 05-Jan-1999). There is no actual file called Tree.pm, so CPAN can find no version number. It has no MANIFEST, README of Makefile.PL, so installation is entirely manual. Some of it even appears to have been written by Mark Jason Dominus, as far back as 1997 (possibly the source code from an old TPJ article on B-Trees by him). 
+
+=back
+
+=head1 SEE ALSO
+
+This module is part of a larger group, which are listed below.
+
+=over 4
+
+=item L<Tree::Binary::Search>
+
+=item L<Tree::Binary::VisitorFactory>
+
+=item L<Tree::Binary::Visitor::BreadthFirstTraversal>
+
+=item L<Tree::Binary::Visitor::PreOrderTraversal>
+
+=item L<Tree::Binary::Visitor::PostOrderTraversal>
+
+=item L<Tree::Binary::Visitor::InOrderTraversal>
 
 =back
 
@@ -562,30 +616,18 @@ I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Deve
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
  File                                           stmt branch   cond    sub    pod   time  total
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
- Tree/Binary.pm                                100.0  100.0   84.4  100.0  100.0   21.8   97.3
- Tree/Binary/Search.pm                          95.0   82.4   75.0  100.0  100.0    9.5   90.0
- Tree/Binary/Search/Node.pm                    100.0  100.0   66.7  100.0  100.0    4.7   98.0
- Tree/Binary/VisitorFactory.pm                  42.9    0.0    n/a   50.0  100.0    0.0   41.7
- Tree/Binary/Visitor/Base.pm                    78.6   25.0   16.7   70.0  100.0    3.1   69.1
- Tree/Binary/Visitor/BreadthFirstTraversal.pm  100.0   75.0   33.3  100.0  100.0    0.3   85.0
- Tree/Binary/Visitor/InOrderTraversal.pm        92.0   75.0   33.3   85.7  100.0    1.9   80.9
- Tree/Binary/Visitor/PostOrderTraversal.pm      92.0   75.0   33.3   85.7  100.0    0.2   80.9
- Tree/Binary/Visitor/PreOrderTraversal.pm       90.0   50.0   33.3   83.3  100.0    0.4   75.7
- t/10_Tree_Binary_test.t                       100.0    n/a    n/a  100.0    n/a    1.1  100.0
- t/11_Tree_Binary_exceptions_test.t            100.0    n/a    n/a  100.0    n/a    3.1  100.0
- t/12_Tree_Binary_clone_test.t                 100.0    n/a    n/a  100.0    n/a    0.7  100.0
- t/20_Tree_Binary_Search_test.t                100.0    n/a    n/a  100.0    n/a    1.4  100.0
- t/21_Tree_Binary_Search_delete_test.t         100.0    n/a    n/a  100.0    n/a    0.5  100.0
- t/23_Tree_Binary_Search_exceptions_test.t     100.0    n/a    n/a  100.0    n/a   48.1  100.0
- t/25_Tree_Binary_Search_Node_test.t           100.0    n/a    n/a  100.0    n/a    0.8  100.0
- t/30_Tree_Binary_Visitors_test.t              100.0    n/a    n/a  100.0    n/a    0.9  100.0
- t/pod.t                                       100.0   50.0    n/a  100.0    n/a    0.7   95.2
- t/pod_coverage.t                              100.0   50.0    n/a  100.0    n/a    0.6   95.2
+ Tree/Binary.pm                                100.0  100.0   84.4  100.0  100.0   64.1   97.5
+ Tree/Binary/Search.pm                          98.9   90.4   81.2  100.0  100.0   17.8   94.9
+ Tree/Binary/Search/Node.pm                    100.0  100.0   66.7  100.0  100.0    6.1   98.0
+ Tree/Binary/Visitor/Base.pm                   100.0  100.0   66.7  100.0  100.0    4.0   96.4
+ Tree/Binary/Visitor/BreadthFirstTraversal.pm  100.0  100.0  100.0  100.0  100.0    0.8  100.0
+ Tree/Binary/Visitor/InOrderTraversal.pm       100.0  100.0  100.0  100.0  100.0    4.7  100.0
+ Tree/Binary/Visitor/PostOrderTraversal.pm     100.0  100.0  100.0  100.0  100.0    0.7  100.0
+ Tree/Binary/Visitor/PreOrderTraversal.pm      100.0  100.0  100.0  100.0  100.0    0.9  100.0
+ Tree/Binary/Visitor/VisitorFactory.pm         100.0  100.0    n/a  100.0  100.0    0.8  100.0
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
- Total                                          97.0   82.1   66.4   96.0  100.0  100.0   92.8
+ Total                                          99.6   94.8   85.5  100.0  100.0  100.0   97.0
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
-
-=head1 SEE ALSO
 
 =head1 AUTHOR
 

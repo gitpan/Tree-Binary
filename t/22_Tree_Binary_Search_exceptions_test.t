@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More 'no_plan';
+use Test::More tests => 31;
 use Test::Exception;
 
 BEGIN { 
@@ -66,6 +66,11 @@ throws_ok {
 throws_ok {
     $btree->insert(bless({}, "Fail"))
 } qr/Insufficient Arguments/, '... this should die';
+
+# test that things die without a comparison function
+throws_ok {
+    $btree->insert(F => 'f')
+} qr/Illegal Operation/, '... this should die';
 
 $btree->useStringComparison();
 $btree->insert(E => 'e');
