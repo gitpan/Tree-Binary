@@ -1,5 +1,10 @@
 Revision history for Perl extension Tree-Binary.
 
+0.06 Thurs Nov 18 2004
+    - now using Scalar::Util::blessed() instead of 
+      the convoluted UNIVERSAL::isa() stuff. 
+      - added Scalar::Util as a dependency
+
 0.05 Tues Oct 12 2004
     - fixed issue with the clone method where it
       did not properly fix the parentel relations

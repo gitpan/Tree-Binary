@@ -4,6 +4,8 @@ package Tree::Binary::Search;
 use strict;
 use warnings;
 
+use Scalar::Util qw(blessed);
+
 use Tree::Binary::Search::Node;
 
 use constant TRUE  => 1;
@@ -13,7 +15,7 @@ use constant EQUAL_TO     =>  0;
 use constant LESS_THAN    => -1;
 use constant GREATER_THAN =>  1;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 ## ----------------------------------------------------------------------------
 ## Tree::Binary::Search
@@ -126,7 +128,7 @@ sub insert {
         $btree = $self->{_root}->new($key, $value);
     }
     elsif (!defined $value && 
-           (defined($key) && ref($key) && UNIVERSAL::isa($key, "Tree::Binary::Search::Node"))) {
+           (blessed($key) && $key->isa("Tree::Binary::Search::Node"))) {
         $btree = $key;
     }
     else {

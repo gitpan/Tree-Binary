@@ -4,7 +4,9 @@ package Tree::Binary;
 use strict;
 use warnings;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
+
+use Scalar::Util qw(blessed);
 
 ## ----------------------------------------------------------------------------
 ## Tree::Binary
@@ -60,7 +62,7 @@ sub setUID {
 
 sub setLeft {
     my ($self, $tree) = @_;
-    (defined($tree) && ref($tree) && UNIVERSAL::isa($tree, "Tree::Binary"))
+    (blessed($tree) && $tree->isa("Tree::Binary"))
         || die "Insufficient Arguments : left argument must be a Tree::Binary object";   
 	$tree->{_parent} = $self;
     $self->{_left} = $tree;
@@ -90,7 +92,7 @@ sub removeLeft {
 
 sub setRight {
     my ($self, $tree) = @_;
-    (defined($tree) && ref($tree) && UNIVERSAL::isa($tree, "Tree::Binary"))
+    (blessed($tree) && $tree->isa("Tree::Binary"))
         || die "Insufficient Arguments : right argument must be a Tree::Binary object";        
 	$tree->{_parent} = $self;
     $self->{_right} = $tree;    
@@ -251,12 +253,12 @@ sub height {
 
 sub accept {
 	my ($self, $visitor) = @_;
-    # it must be defined, a reference type and ...
-	(defined($visitor) && ref($visitor) && 
+    # it must be a blessed reference and ...
+	(blessed($visitor) && 
         # either a Tree::Simple::Visitor object, or ...
-        (UNIVERSAL::isa($visitor, "Tree::Binary::Visitor") || 
+        ($visitor->isa("Tree::Binary::Visitor") || 
             # it must be an object which has a 'visit' method avaiable
-            (UNIVERSAL::isa($visitor, "UNIVERSAL") && $visitor->can('visit')))) 
+            $visitor->can('visit'))) 
 		|| die "Insufficient Arguments : You must supply a valid Visitor object";
 	$visitor->visit($self);
 }
@@ -318,7 +320,7 @@ sub _cloneNode {
     # if it is in the cache, then return that
     return $seen->{$node} if exists ${$seen}{$node};
     # if it is an object, then ...	
-    if (UNIVERSAL::isa($node, 'UNIVERSAL')) {
+    if (blessed($node)) {
         # see if we can clone it
         if ($node->can('clone')) {
             $clone = $node->clone();

@@ -4,16 +4,18 @@ package Tree::Binary::Visitor::InOrderTraversal;
 use strict;
 use warnings;
 
+use Scalar::Util qw(blessed);
+
 use Tree::Binary::Visitor::Base;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 our @ISA = qw(Tree::Binary::Visitor::Base);
 
 # visit routine
 sub visit {
 	my ($self, $tree) = @_;
-	(defined($tree) && ref($tree) && UNIVERSAL::isa($tree, "Tree::Binary"))
+	(blessed($tree) && $tree->isa("Tree::Binary"))
 		|| die "Insufficient Arguments : You must supply a valid Tree::Binary object";
     # get all things set up
 	my @results;
