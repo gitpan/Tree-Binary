@@ -21,5 +21,6 @@ t/22_Tree_Binary_Search_exceptions_test.t
 t/25_Tree_Binary_Search_Node_test.t
 t/30_Tree_Binary_Visitors_test.t
 t/31_Tree_Binary_Visitors_misc_test.t
+t/50_Tree_Binary_Theorem_Proofs_test.t
 t/pod_coverage.t
 t/pod.t

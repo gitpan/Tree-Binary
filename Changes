@@ -1,5 +1,21 @@
 Revision history for Perl extension Tree-Binary.
 
+0.03 Wed Aug 25 2004
+    - added test with Theorems idea in the file
+      (50_Tree_Binary_Theorem_Proofs_test.t)
+    
+Tree::Binary -
+    - added the 'size' and 'height' methods
+        - added tests for these
+        - added documentation for these
+        
+Tree::Binary::Search - 
+    - added the 'accept', 'size' and 'height' methods
+      which really just delegate to the underlying 
+      Tree::Binary object.
+        - added tests for these
+        - added documentation for these      
+
 0.02 Tues Aug 24 2004
     - beefed up the test suite a lot
     

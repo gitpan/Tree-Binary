@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 56;
+use Test::More tests => 61;
 
 BEGIN { 
     use_ok('Tree::Binary');
@@ -162,5 +162,55 @@ is($btree->getNodeValue(), '*', '... got what we expected');
     
     ok($btree->getRight()->hasRight(), '... we have our right leaf node again');  
     is($btree->getRight()->getRight(), $right_leaf, '... and it is what we told it to be');
+}
+
+# some of the recursive informational methods
+
+{
+
+    my $btree = Tree::Binary->new("o")
+                            ->setLeft(
+                                Tree::Binary->new("o")
+                                    ->setLeft(
+                                        Tree::Binary->new("o")
+                                    )
+                                    ->setRight(
+                                        Tree::Binary->new("o")
+                                            ->setLeft(
+                                                Tree::Binary->new("o")
+                                                    ->setLeft(
+                                                        Tree::Binary->new("o")
+                                                            ->setRight(Tree::Binary->new("o"))
+                                                    )
+                                            )
+                                    )
+                            )
+                            ->setRight(
+                                Tree::Binary->new("o")
+                                            ->setLeft(
+                                                Tree::Binary->new("o")
+                                                    ->setRight(
+                                                        Tree::Binary->new("o")
+                                                            ->setLeft(
+                                                                Tree::Binary->new("o")
+                                                            )
+                                                            ->setRight(
+                                                                Tree::Binary->new("o")
+                                                            )
+                                                    )
+                                            )
+                                            ->setRight(
+                                                Tree::Binary->new("o")
+                                                    ->setRight(Tree::Binary->new("o"))
+                                            )
+                            );
+    isa_ok($btree, 'Tree::Binary');
+    
+    can_ok($btree, 'size');
+    cmp_ok($btree->size(), '==', 14, '... we have 14 nodes in the tree');
+    
+    can_ok($btree, 'height');
+    cmp_ok($btree->height(), '==', 6, '... the tree is 6 nodes tall');
+
 }
 

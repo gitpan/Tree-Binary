@@ -22,15 +22,15 @@ BEGIN {
 #     my $visitor = Tree::Binary::Visitor::InOrderTraversal->new();
 #     $visitor->setNodeFilter(sub {
 #         my ($t) = @_;
-#         diag(("  |" x $t->getDepth()) . "--" . $t->getNodeKey());
+#         diag(("  |" x $t->getDepth()) . "--" . $t->getNodeValue());
 #     });
-#     $btree->getTree()->accept($visitor);
+#     $btree->accept($visitor);
 # }
 
 sub check_tree {
     my ($btree, @expected_results) = @_;
     my $visitor = Tree::Binary::Visitor::InOrderTraversal->new();
-    $btree->getTree()->accept($visitor);
+    $btree->accept($visitor);
     is_deeply(
             [ $visitor->getResults() ],
             [ @expected_results ],

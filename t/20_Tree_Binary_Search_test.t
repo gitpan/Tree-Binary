@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 35;
+use Test::More tests => 39;
 use Test::Exception;
 
 BEGIN { 
@@ -22,6 +22,8 @@ can_ok($btree, 'update');
 can_ok($btree, 'exists');
 can_ok($btree, 'max');
 can_ok($btree, 'min');
+can_ok($btree, 'size');
+can_ok($btree, 'height');
 
 can_ok($btree, 'useNumericComparison');
 $btree->useNumericComparison();
@@ -73,6 +75,9 @@ is($btree->select(11), 'X', '... found what we were looking for');
 
 is($btree->max(), 'L', '... got the max value');
 is($btree->min(), 'I', '... got the min value');
+
+cmp_ok($btree->size(), '==', 12, '... we have 12 nodes in the tree');
+cmp_ok($btree->height(), '==', 6, '... the tree is 6 nodes tall');
 
 ## test some misc. items
 

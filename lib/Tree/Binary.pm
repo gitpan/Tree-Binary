@@ -4,7 +4,7 @@ package Tree::Binary;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 ## ----------------------------------------------------------------------------
 ## Tree::Binary
@@ -230,6 +230,23 @@ sub mirror {
     # and recurse
     $self->{_left}->mirror() if $self->hasLeft();
     $self->{_right}->mirror() if $self->hasRight();
+    $self;
+}
+
+sub size {
+    my ($self) = @_;
+    my $size = 1;
+    $size += $self->{_left}->size() if $self->hasLeft();
+    $size += $self->{_right}->size() if $self->hasRight();    
+    return $size;
+}
+
+sub height {
+    my ($self) = @_;
+    my ($left_height, $right_height) = (0, 0);
+    $left_height = $self->{_left}->height() if $self->hasLeft();
+    $right_height = $self->{_right}->height() if $self->hasRight();    
+    return 1 + (($left_height > $right_height) ? $left_height : $right_height);
 }
 
 sub accept {
@@ -243,8 +260,6 @@ sub accept {
 		|| die "Insufficient Arguments : You must supply a valid Visitor object";
 	$visitor->visit($self);
 }
-
-
 
 ## ----------------------------------------------------------------------------
 ## cloning 
@@ -514,7 +529,7 @@ This method will return true (C<1>) if the current Tree::Binary object is the ro
 
 =back
 
-=head2 Misc. Methods
+=head2 Recursive Methods
 
 =over 4
 
@@ -550,6 +565,20 @@ It should be noted that this is a destructive action, it will alter your current
   my $mirror_copy = $tree->clone()->mirror();
 
 Of course, the cloning operation is a full deep copy, so keep in mind the expense of this operation. Depending upon your needs it may make more sense to call C<mirror> a few times and gather your results with a Visitor object, rather than to C<clone>.
+
+=item B<size>
+
+Returns the total number of nodes in the current tree and all its sub-trees.
+
+=item B<height>
+
+Returns the length of the longest path from the current tree to the furthest leaf node.
+
+=back
+
+=head2 Misc. Methods
+
+=over 4
 
 =item B<accept ($visitor)>
 
@@ -616,17 +645,17 @@ I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Deve
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
  File                                           stmt branch   cond    sub    pod   time  total
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
- Tree/Binary.pm                                100.0  100.0   84.4  100.0  100.0   64.1   97.5
- Tree/Binary/Search.pm                          98.9   90.4   81.2  100.0  100.0   17.8   94.9
- Tree/Binary/Search/Node.pm                    100.0  100.0   66.7  100.0  100.0    6.1   98.0
- Tree/Binary/Visitor/Base.pm                   100.0  100.0   66.7  100.0  100.0    4.0   96.4
- Tree/Binary/Visitor/BreadthFirstTraversal.pm  100.0  100.0  100.0  100.0  100.0    0.8  100.0
- Tree/Binary/Visitor/InOrderTraversal.pm       100.0  100.0  100.0  100.0  100.0    4.7  100.0
- Tree/Binary/Visitor/PostOrderTraversal.pm     100.0  100.0  100.0  100.0  100.0    0.7  100.0
- Tree/Binary/Visitor/PreOrderTraversal.pm      100.0  100.0  100.0  100.0  100.0    0.9  100.0
- Tree/Binary/Visitor/VisitorFactory.pm         100.0  100.0    n/a  100.0  100.0    0.8  100.0
+ Tree/Binary.pm                                100.0  100.0   84.4  100.0  100.0   60.8   97.7
+ Tree/Binary/Search.pm                          99.0   90.4   81.2  100.0  100.0   22.0   95.1
+ Tree/Binary/Search/Node.pm                    100.0  100.0   66.7  100.0  100.0   11.9   98.0
+ Tree/Binary/VisitorFactory.pm                 100.0  100.0    n/a  100.0  100.0    0.5  100.0
+ Tree/Binary/Visitor/Base.pm                   100.0  100.0   66.7  100.0  100.0    0.6   96.4
+ Tree/Binary/Visitor/BreadthFirstTraversal.pm  100.0  100.0  100.0  100.0  100.0    0.0  100.0
+ Tree/Binary/Visitor/InOrderTraversal.pm       100.0  100.0  100.0  100.0  100.0    3.4  100.0
+ Tree/Binary/Visitor/PostOrderTraversal.pm     100.0  100.0  100.0  100.0  100.0    0.4  100.0
+ Tree/Binary/Visitor/PreOrderTraversal.pm      100.0  100.0  100.0  100.0  100.0    0.4  100.0
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
- Total                                          99.6   94.8   85.5  100.0  100.0  100.0   97.0
+ Total                                          99.6   95.0   85.5  100.0  100.0  100.0   97.1
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
 
 =head1 AUTHOR

@@ -13,7 +13,7 @@ use constant EQUAL_TO     =>  0;
 use constant LESS_THAN    => -1;
 use constant GREATER_THAN =>  1;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 ## ----------------------------------------------------------------------------
 ## Tree::Binary::Search
@@ -88,6 +88,24 @@ sub getTree {
 sub isEmpty {
     my ($self) = @_;
     return (ref($self->{_root})) ? FALSE : TRUE;
+}
+
+## ----------------------------------------------------------------------------
+## methods for underlying tree
+
+sub accept {
+    my ($self, $visitor) = @_;
+    $self->{_root}->accept($visitor);
+}
+
+sub size {
+    my ($self) = @_;
+    return $self->{_root}->size();
+}
+
+sub height {
+    my ($self) = @_;
+    return $self->{_root}->height();
 }
 
 ## ----------------------------------------------------------------------------
@@ -509,7 +527,7 @@ The constructor will take an optional argument (C<$root>) which a class (or a cl
 
 =item B<getTree>
 
-This will return the underlying binary tree object. Tt is a Tree::Binary::Search::Node hierarchy, but can be something else if you use the optional C<$root> argument in the constructor.
+This will return the underlying binary tree object. It is a Tree::Binary::Search::Node hierarchy, but can be something else if you use the optional C<$root> argument in the constructor.
 
 =back
 
@@ -520,6 +538,24 @@ This will return the underlying binary tree object. Tt is a Tree::Binary::Search
 =item B<isEmpty>
 
 Returns true (C<1>) if the tree is empty, and false (C<0>) otherwise.
+
+=item B<size>
+
+Return the number of nodes in the tree.
+
+=item B<height>
+
+Return the length of the longest path from the root to the furthest leaf node.
+
+=back
+
+=head2 Tree Methods
+
+=over 4
+
+=item B<accept ($visitor)>
+
+This will pass the C<$visitor> object to the underlying Tree::Binary::Search::Node object's C<accept> method.
 
 =back
 
