@@ -1,5 +1,11 @@
 Revision history for Perl extension Tree-Binary.
 
+0.07 Thurs May 26, 2005
+    * Tree::Binary::Search
+        [ thanks to Jan Kratochvil for these ]
+        - Some error message corrections 
+        - new min_key() and max_key() to get the node keys.
+
 0.06 Thurs Nov 18 2004
     - now using Scalar::Util::blessed() instead of 
       the convoluted UNIVERSAL::isa() stuff. 

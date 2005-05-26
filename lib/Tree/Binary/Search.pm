@@ -15,7 +15,7 @@ use constant EQUAL_TO     =>  0;
 use constant LESS_THAN    => -1;
 use constant GREATER_THAN =>  1;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 ## ----------------------------------------------------------------------------
 ## Tree::Binary::Search
@@ -292,22 +292,42 @@ sub exists : method {
     }
 }
 
-sub max {
+sub _max_node {
     my ($self) = @_;
     (!$self->isEmpty()) 
-        || die "Illegal Operation : Cannot get a min value without first inserting";    
+        || die "Illegal Operation : Cannot get a max without first inserting";       
     my $current = $self->{_root};
     $current = $current->getRight() while $current->hasRight();
-    return $current->getNodeValue();
+    return $current;
+}
+
+sub _min_node {
+    my ($self) = @_;
+    (!$self->isEmpty()) 
+        || die "Illegal Operation : Cannot get a min without first inserting";    
+    my $current = $self->{_root};
+    $current = $current->getLeft() while $current->hasLeft();
+    return $current;
+}
+
+sub max_key {
+    my ($self) = @_;
+    return $self->_max_node()->getNodeKey();
+}
+
+sub min_key {
+    my ($self) = @_;
+    return $self->_min_node()->getNodeKey();
+}
+
+sub max {
+    my ($self) = @_;
+    return $self->_max_node()->getNodeValue();
 }
 
 sub min {
     my ($self) = @_;
-    (!$self->isEmpty()) 
-        || die "Illegal Operation : Cannot get a max value without first inserting";    
-    my $current = $self->{_root};
-    $current = $current->getLeft() while $current->hasLeft();
-    return $current->getNodeValue();
+    return $self->_min_node()->getNodeValue();
 }
 
 ## ------------------------------------------------------------------------
@@ -496,9 +516,13 @@ Tree::Binary::Search - A Binary Search Tree for perl
   
   $btree->select(9); # return 'Nine'
   
-  $btree->min(); # returns 1
+  $btree->min_key(); # returns 1
+     
+  $btree->min(); # returns 'One'
   
-  $btree->max(); # return 9
+  $btree->max_key(); # return 9
+     
+  $btree->max(); # return 'Nine'
   
   $btree->delete(5);
   
@@ -617,9 +641,17 @@ Deletes the node at C<$key> in the tree, and restructures the tree appropriately
 
 Deletion in binary search trees is difficult, but as with most things about binary search trees, it has been well studied. After a few attempts on my own, I decided it was best to look for a real implementation and use that as my basis. I found C code for the GNU libavl (L<http://www.msu.edu/~pfaffben/avl/libavl.html/Deleting-from-a-BST.html>) online along with an excellent description of the code, so I pretty much copied this implementation directly from the code in this library. 
 
+=item B<max_key>
+
+Returns the maximum key stored in the tree (basically the right most node).
+
 =item B<max>
 
 Returns the maximum value stored in the tree (basically the right most node).
+
+=item B<min_key>
+
+Returns the minimum key stored in the tree (basically the left most node).
 
 =item B<min>
 
@@ -693,13 +725,21 @@ The algorithm for C<delete> was taken from the GNU libavl 2.0.1, with modificati
 
 L<http://www.msu.edu/~pfaffben/avl/libavl.html/Deleting-from-a-BST.html>
 
+=head1 ACKNOWLEDGEMENTS
+
+=over 4
+
+=item Thanks to Jan Kratochvil for the min_key() and max_key() methods.
+
+=back
+
 =head1 AUTHOR
 
 stevan little, E<lt>stevan@iinteractive.comE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2004 by Infinity Interactive, Inc.
+Copyright 2004, 2005 by Infinity Interactive, Inc.
 
 L<http://www.iinteractive.com>
 
@@ -707,4 +747,3 @@ This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 
 
 =cut
-

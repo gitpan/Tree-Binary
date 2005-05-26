@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 39;
+use Test::More tests => 43;
 use Test::Exception;
 
 BEGIN { 
@@ -20,6 +20,8 @@ can_ok($btree, 'insert');
 can_ok($btree, 'select');
 can_ok($btree, 'update');
 can_ok($btree, 'exists');
+can_ok($btree, 'max_key');
+can_ok($btree, 'min_key');
 can_ok($btree, 'max');
 can_ok($btree, 'min');
 can_ok($btree, 'size');
@@ -73,6 +75,8 @@ $btree->update(11 => 'X');
 is($btree->select(18), 'Z', '... found what we were looking for');
 is($btree->select(11), 'X', '... found what we were looking for');
 
+is($btree->max_key(), '20', '... got the max key');
+is($btree->min_key(), '1',  '... got the min key');
 is($btree->max(), 'L', '... got the max value');
 is($btree->min(), 'I', '... got the min value');
 
