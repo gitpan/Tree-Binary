@@ -4,7 +4,7 @@ package Tree::Binary;
 use strict;
 use warnings;
 
-our $VERSION = '1.05';
+our $VERSION = '1.06';
 
 use Scalar::Util qw(blessed);
 
@@ -724,6 +724,10 @@ I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Deve
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
  Total                                          99.6   94.4   88.8  100.0  100.0  100.0   97.4
  -------------------------------------------- ------ ------ ------ ------ ------ ------ ------
+
+=head1 Repository
+
+L<https://github.com/ronsavage/Tree-Binary>
 
 =head1 AUTHOR
 

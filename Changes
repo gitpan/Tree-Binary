@@ -1,7 +1,16 @@
 Revision history for Perl extension Tree-Binary.
 
+1.06  Fri Sep 19 08:52:00 2014
+	- Rename CHANGES to Changes.
+	- Remove #!/usr/bin/perl from the 1st line of all test scripts.
+	- Move t/pod.t and t/pod_coverage.t into xt/author/.
+	- Add constant to the list of pre-reqs.
+	- Update Build.PL and Makefile.PL re putting this package on github.
+	- Add use strict and use warnings to Build.PL and Makefile.PL.
+
 1.05  Fri Nov  9 15:11:00 2012
 	- No code changes.
+	- Fix tests which referred to Tree::Binary rather than Tree::Binary2. See V 1.00 below for details.
 	- Bump the version # to 1.05 to avoid problems with old versions of the Tree distro, which also had
 		a module called Tree::Binary, which causes PAUSE to not index Tree::Binary in this distro.
 		V 1.05 was chosen because the most recent version of Tree I released was V 1.04.
